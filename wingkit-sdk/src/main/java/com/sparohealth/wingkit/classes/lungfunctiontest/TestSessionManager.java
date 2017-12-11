@@ -98,7 +98,6 @@ public class TestSessionManager {
                     try {
                         Log.d(TAG, "Got the test session data - " + result.toString());
 
-                        resetProcessingAttemptsCount();
                         Gson gson = new Gson();
 
                         List<UploadTarget> uploads = testSession.uploads;

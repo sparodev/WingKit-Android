@@ -295,7 +295,8 @@ public class TestSessionRecorder {
                             endTime = SystemClock.elapsedRealtime();
                         }
                     } catch (IllegalStateException ex) {
-                        //
+                        ex.printStackTrace();
+                        context.setRecorderState(TestRecorderState.error);
                     }
                     // if the audio recorder IS initialized...
                     if (audioRecord.getState() == AudioRecord.STATE_INITIALIZED) {
@@ -308,7 +309,8 @@ public class TestSessionRecorder {
                         // close the file
                         wavOut.close();
                     } catch (IOException ex) {
-                        //
+                        ex.printStackTrace();
+                        context.setRecorderState(TestRecorderState.error);
                     }
                 }
             }
@@ -443,7 +445,8 @@ public class TestSessionRecorder {
                     try {
                         accessWave.close();
                     } catch (IOException ex) {
-                        //
+                        // Rethrow the exception to be handled at the caller
+                        throw ex;
                     }
                 }
             }
