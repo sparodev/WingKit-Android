@@ -4,7 +4,9 @@ import android.util.Log;
 
 import com.amazonaws.auth.CognitoCachingCredentialsProvider;
 import com.amazonaws.auth.CognitoCredentialsProvider;
+import com.amazonaws.mobileconnectors.s3.transferutility.TransferListener;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferObserver;
+import com.amazonaws.mobileconnectors.s3.transferutility.TransferState;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferUtility;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
@@ -273,9 +275,20 @@ public class Client {
      * @param callback The status callback object
      * @throws JSONException
      */
-    public void uploadFile(String filePath, UploadTarget target, final WingApiCallback callback) throws JSONException {
-
+    public void uploadFile(String filePath, UploadTarget target, final WingApiCallback callback) {
         File newFile = new File(filePath);
+
+//        new Thread(new Runnable() {
+//            @Override
+//            public void run() {
+//                try {
+//                    Thread.sleep(500);
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
+//                callback.onErrorResponse(new Exception("Test Error"));
+//            }
+//        }).start();
 
         TransferObserver observer = transferUtility.upload(
                 target.bucket,     /* The bucket to upload to */
@@ -283,7 +296,46 @@ public class Client {
                 newFile        /* The file where the data to upload exists */
         );
 
-        callback.onSuccessResponse(new JSONObject().put("Upload Callback","test response"));
+        // '### test - set the transfer listener for the upload  TSP 1/17/18
+        observer.setTransferListener(new TransferListener() {
+            @Override
+            public void onStateChanged(int id, TransferState state) {
+                try {
+                    // '### test - if the transfer state is COMPLETED...  TSP 1/17/18
+                    if (state == TransferState.COMPLETED) {
+                        callback.onSuccessResponse(new JSONObject().put("Upload Callback", "Success"));
+                    }
+                    // '### test - if the transfer state is FAILED...  TSP 1/17/18
+                    else if (state == TransferState.FAILED) {
+                        throw new Exception("Upload Failed!");
+                    }
+                    // '### test - if the transfer state is CANCELED...  TSP 1/17/18
+                    else if (state == TransferState.CANCELED) {
+                        throw new Exception("Upload Cancelled!");
+                    }
+                    // '### test - if the transfer state is anything else...  TSP 1/17/18
+                    else {
+                        // do nothing
+                    }
+                }
+                catch (JSONException ex) {
+                    callback.onErrorResponse(ex);
+                }
+                catch (Exception ex) {
+                    callback.onErrorResponse(ex);
+                }
+            }
+
+            @Override
+            public void onProgressChanged(int id, long bytesCurrent, long bytesTotal) {
+                // TODO - does there need to be a callback method for reporting the upload progress?  TSP 1/17/18
+            }
+
+            @Override
+            public void onError(int id, Exception ex) {
+                callback.onErrorResponse(ex);
+            }
+        });
     }
 
     private void setupAWS(){

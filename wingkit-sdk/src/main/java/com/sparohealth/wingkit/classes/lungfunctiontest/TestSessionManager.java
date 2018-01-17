@@ -169,22 +169,20 @@ public class TestSessionManager {
 
         if (target != null) {
             usedUploadTargetIds.add(target.id);
-            try {
-                mClient.uploadFile(filePath, target, new WingApiCallback() {
-                    @Override
-                    public void onSuccessResponse(JSONObject result) {
-                        Log.i("test", result.toString());
-                        processTestSession();
-                    }
-                    @Override
-                    public void onErrorResponse(Exception error) {
-                        Log.i("test", error.toString());
-                        completed(TestSessionManagerError.testUploadFailed);
-                    }
-                });
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
+
+            // '### test - removed the try/catch due to the re-org of Client.uploadFile  TSP 1/17/18
+            mClient.uploadFile(filePath, target, new WingApiCallback() {
+                @Override
+                public void onSuccessResponse(JSONObject result) {
+                    Log.i(TAG, result.toString());
+                    processTestSession();
+                }
+                @Override
+                public void onErrorResponse(Exception error) {
+                    Log.i(TAG, error.toString());
+                    completed(TestSessionManagerError.testUploadFailed);
+                }
+            });
         }
         else {
             getUploadTarget(filePath);
@@ -212,7 +210,7 @@ public class TestSessionManager {
 
             @Override
             public void onErrorResponse(Exception error) {
-                Log.d("TestSesionManager", error.getMessage());
+                Log.d(TAG, error.getMessage());
                 completed(TestSessionManagerError.uploadTargetCreationFailed);
             }
         });
