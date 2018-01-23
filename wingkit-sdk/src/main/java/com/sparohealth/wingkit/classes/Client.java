@@ -11,6 +11,7 @@ import com.amazonaws.mobileconnectors.s3.transferutility.TransferUtility;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -293,49 +294,47 @@ public class Client {
         TransferObserver observer = transferUtility.upload(
                 target.bucket,     /* The bucket to upload to */
                 target.key,    /* The key for the Uploaded object */
-                newFile        /* The file where the data to upload exists */
+                newFile,        /* The file where the data to upload exists */
+                new ObjectMetadata(),   /* An empty meta data object */
+                null,       /* The ACL list for the upload */
+                new TransferListener() { /* changed to set the transfer listener inside of the upload method  TSP 1/23/18 */
+                    @Override
+                    public void onStateChanged(int id, TransferState state) {
+                        try {
+                            // if the transfer state is COMPLETED...  TSP 1/17/18
+                            if (state == TransferState.COMPLETED) {
+                                callback.onSuccessResponse(new JSONObject().put("Upload Callback", "Success"));
+                            }
+                            // if the transfer state is FAILED...  TSP 1/17/18
+                            else if (state == TransferState.FAILED) {
+                                throw new Exception("Upload Failed!");
+                            }
+                            // if the transfer state is CANCELED...  TSP 1/17/18
+                            else if (state == TransferState.CANCELED) {
+                                throw new Exception("Upload Cancelled!");
+                            }
+                            // if the transfer state is anything else...  TSP 1/17/18
+                            else {
+                                // do nothing
+                            }
+                        } catch (JSONException ex) {
+                            callback.onErrorResponse(ex);
+                        } catch (Exception ex) {
+                            callback.onErrorResponse(ex);
+                        }
+                    }
+
+                    @Override
+                    public void onProgressChanged(int id, long bytesCurrent, long bytesTotal) {
+                        // TODO - does there need to be a callback method for reporting the upload progress?  TSP 1/17/18
+                    }
+
+                    @Override
+                    public void onError(int id, Exception ex) {
+                        callback.onErrorResponse(ex);
+                    }
+                }
         );
-
-        // '### test - set the transfer listener for the upload  TSP 1/17/18
-        observer.setTransferListener(new TransferListener() {
-            @Override
-            public void onStateChanged(int id, TransferState state) {
-                try {
-                    // '### test - if the transfer state is COMPLETED...  TSP 1/17/18
-                    if (state == TransferState.COMPLETED) {
-                        callback.onSuccessResponse(new JSONObject().put("Upload Callback", "Success"));
-                    }
-                    // '### test - if the transfer state is FAILED...  TSP 1/17/18
-                    else if (state == TransferState.FAILED) {
-                        throw new Exception("Upload Failed!");
-                    }
-                    // '### test - if the transfer state is CANCELED...  TSP 1/17/18
-                    else if (state == TransferState.CANCELED) {
-                        throw new Exception("Upload Cancelled!");
-                    }
-                    // '### test - if the transfer state is anything else...  TSP 1/17/18
-                    else {
-                        // do nothing
-                    }
-                }
-                catch (JSONException ex) {
-                    callback.onErrorResponse(ex);
-                }
-                catch (Exception ex) {
-                    callback.onErrorResponse(ex);
-                }
-            }
-
-            @Override
-            public void onProgressChanged(int id, long bytesCurrent, long bytesTotal) {
-                // TODO - does there need to be a callback method for reporting the upload progress?  TSP 1/17/18
-            }
-
-            @Override
-            public void onError(int id, Exception ex) {
-                callback.onErrorResponse(ex);
-            }
-        });
     }
 
     private void setupAWS(){
